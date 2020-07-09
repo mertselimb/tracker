@@ -9,10 +9,27 @@ const authReducer = (state, action) => {
       return { ...state, errorMessage: action.payload };
     case "signin":
       return { token: action.payload, errorMessage: "" };
-
+    case "signout":
+      return { token: null, errorMessage: "" };
+    case "clear_error_message":
+      return { errorMessage: "" };
     default:
       return state;
   }
+};
+
+const tryLocalSignIn = (dispatch) => async () => {
+  const token = await AsyncStorage.getItem("token");
+  if (token) {
+    dispatch({ type: "signin", payload: token });
+    navigate("TrackList");
+  } else {
+    navigate("Signup");
+  }
+};
+
+const clearErrorMessage = (dispatch) => () => {
+  dispatch({ type: "clear_error_message" });
 };
 
 const signup = (dispatch) => async ({ email, password }) => {
@@ -27,7 +44,7 @@ const signup = (dispatch) => async ({ email, password }) => {
   } catch (e) {
     dispatch({
       type: "add_error",
-      payload: "Somethign went wrong with sign up." + e.response.data,
+      payload: "Something went wrong with sign up." + e.response.data,
     });
   }
 };
@@ -44,13 +61,15 @@ const signin = (dispatch) => async ({ email, password }) => {
   } catch (e) {
     dispatch({
       type: "add_error",
-      payload: "Somethign went wrong with sign up." + e.response.data,
+      payload: "Something went wrong with sign in." + e.response.data,
     });
   }
 };
 
-const signout = (dispatch) => () => {
-  dispatch({});
+const signout = (dispatch) => async () => {
+  await AsyncStorage.removeItem("token");
+  dispatch({ type: "signout" });
+  navigate("loginFlow");
 };
 
 export const { Provider, Context } = createDataContext(
@@ -59,6 +78,8 @@ export const { Provider, Context } = createDataContext(
     signup,
     signin,
     signout,
+    clearErrorMessage,
+    tryLocalSignIn,
   },
   {
     token: null,
